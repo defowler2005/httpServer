@@ -8,7 +8,7 @@
 #ifndef CPPHTTPLIB_HTTPLIB_H
 #define CPPHTTPLIB_HTTPLIB_H
 
-#define CPPHTTPLIB_VERSION "0.18.0"
+#define CPPHTTPLIB_VERSION "0.18.1"
 
 /*
  * Configuration
@@ -369,8 +369,9 @@ namespace httplib {
 
             inline bool equal(const std::string& a, const std::string& b) {
                 return a.size() == b.size() &&
-                    std::equal(a.begin(), a.end(), b.begin(),
-                        [](char ca, char cb) { return to_lower(ca) == to_lower(cb); });
+                    std::equal(a.begin(), a.end(), b.begin(), [](char ca, char cb) {
+                    return to_lower(ca) == to_lower(cb);
+                        });
             }
 
             struct equal_to {
@@ -2923,9 +2924,7 @@ namespace httplib {
             }
         }
 
-        inline mmap::mmap(const char* path) {
-            open(path);
-        }
+        inline mmap::mmap(const char* path) { open(path); }
 
         inline mmap::~mmap() { close(); }
 
@@ -4148,7 +4147,7 @@ namespace httplib {
                 p++;
             }
 
-            if (p < end) {
+            if (p <= end) {
                 auto key_len = key_end - beg;
                 if (!key_len) { return false; }
 
