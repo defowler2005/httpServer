@@ -26,20 +26,28 @@ static std::string readFile(const std::string &filePath)
     return contents.str();
 }
 
-static void consoleTextInput()
+static void ConsoleReadKey()
 {
     std::string input;
+
     while (true)
     {
         std::getline(std::cin, input);
-        if (input == "exit")
+
+        if (input == "exit" || input == "stop")
         {
             log("Stopping the server...");
-            Sleep(1350);
+            Sleep(1345);
             exit(0);
-            break;
         }
+        else
+            log("Invalid command: " + input + " commands include: exit\n");
     }
+};
+
+static void startServer(httplib::Server &server, const std::string &ip, int port)
+{
+    server.listen(ip.c_str(), port);
 };
 
 int main(int argc, char *argv[])
@@ -50,29 +58,26 @@ int main(int argc, char *argv[])
     std::string localIP = getLocalIPv4();
 
     httplib::Server server;
+
     if (argc >= 3)
     {
         log("Arguments were parsed, using them as IP and PORT...");
 
         if (IPisValid(argv[1]) == false)
         {
-            log("You have entered and invalid IP.");
+            log("You have entered an invalid IP.");
             return 0;
         }
         else
-        {
             ip = argv[1];
-        };
 
         if (std::stoi(argv[2]) < 1025 || std::stoi(argv[2]) > 65535)
         {
-            log("You have entered and invalid PORT. Port must range from a minimum of 1025 and a maximum of 65535");
+            log("You have entered an invalid PORT. Port must range from a minimum of 1025 to a maximum of 65535");
             return 0;
         }
         else
-        {
             PORT = std::stoi(argv[2]);
-        };
     }
     else
     {
@@ -85,65 +90,65 @@ int main(int argc, char *argv[])
             std::cerr << "Can't find computer's local IPv4. Using default IP (localhost:80)..." << std::endl;
             return 0;
         }
-    }
+    };
 
     server.Get("/", [&](const httplib::Request &req, httplib::Response &res)
                {
-        std::string client_ip = req.remote_addr;
-        std::string requestPath = req.path;
-        isRoute = false;
-        std::string filePath = fs::current_path().string() + "/index.html";
-        if (fs::exists(filePath)) {
-            res.set_content(readFile(filePath), getMimeType(filePath));
-            log("Client " + client_ip + " requested: /index.html");
-        }
-        else {
-            if (!isRoute) {
-                if (fs::exists(fs::current_path().string() + "/404.html")) {
-                    res.set_content(readFile(fs::current_path().string() + "/404.html"), "text/html");
-                }
-                else {
-                    res.set_content("404: File not found", "text/plain");
-                }
-                res.status = 404;
+            std::string client_ip = req.remote_addr;
+            std::string requestPath = req.path;
+            isRoute = false;
+            std::string filePath = fs::current_path().string() + "/index.html";
+            if (fs::exists(filePath)) {
+                res.set_content(readFile(filePath), getMimeType(filePath));
+                log("Client " + client_ip + " requested: /index.html");
             }
-        } });
+            else {
+                if (!isRoute) {
+                    if (fs::exists(fs::current_path().string() + "/404.html")) {
+                        res.set_content(readFile(fs::current_path().string() + "/404.html"), "text/html");
+                    }
+                    else {
+                        res.set_content("404: File not found", "text/plain");
+                    }; res.status = 404;
+                }
+            } });
 
-    server.Get("/execute", [&](const httplib::Request &req, httplib::Response &res)
+    server.Get("/test", [&](const httplib::Request &req, httplib::Response &res)
                {
-        std::string client_ip = req.remote_addr;
-        std::string requestPath = req.path;
-        isRoute = true;
-        res.set_content("Chrome executed!", "text/plain");
-        system("C:/Users/defowler2005/Downloads/Application/chrome.exe");
-        log("Client " + client_ip + " accessed the " + requestPath + " route."); });
+                    std::string client_ip = req.remote_addr;
+                    std::string requestPath = req.path;
+                    isRoute = true;
+                    res.set_content("Test route tested!", "text/plain");
+                    log("Client " + client_ip + " accessed the " + requestPath + " route."); });
 
     server.Get(".*", [&](const httplib::Request &req, httplib::Response &res)
                {
-        std::string filePath = fs::current_path().string() + req.path;
-        std::string client_ip = req.remote_addr;
-        std::string requestPath = req.path;
-        if (fs::exists(filePath)) {
-            isRoute = false;
-            res.set_content(readFile(filePath), getMimeType(filePath));
-            log("Client " + client_ip + " requested: ." + requestPath);
-        }
-        else {
-            if (!isRoute) {
-                if (fs::exists(fs::current_path().string() + "/404.html")) {
-                    res.set_content(readFile(fs::current_path().string() + "/404.html"), "text/html");
-                }
-                else {
-                    res.set_content("404: File not found", "text/html");
-                }
-                res.status = 404;
-            }; log("Client " + client_ip + " requested: ." + requestPath + " but the resource does not exist.");
-        } });
+                    std::string filePath = fs::current_path().string() + req.path;
+                    std::string client_ip = req.remote_addr;
+                    std::string requestPath = req.path;
+                    if (fs::exists(filePath)) {
+                        isRoute = false;
+                        res.set_content(readFile(filePath), getMimeType(filePath));
+                        log("Client " + client_ip + " requested: ." + requestPath);
+                    }
+                    else {
+                        if (!isRoute) {
+                            if (fs::exists(fs::current_path().string() + "/404.html")) {
+                                res.set_content(readFile(fs::current_path().string() + "/404.html"), "text/html");
+                            }
+                            else {
+                                res.set_content("404: File not found", "text/html");
+                            }
+                            res.status = 404;
+                        }; log("Client " + client_ip + " requested: ." + requestPath + " but the resource does not exist.");
+                    } });
 
     log("The server is now running on http://" + ip + ":" + std::to_string(PORT));
-    server.listen(ip.c_str(), PORT);
+    log("Enter command at any time!\n");
+    std::thread serverThread(startServer, std::ref(server), ip, PORT);
+    std::thread inputThread(ConsoleReadKey);
 
-    std::thread inputThread(consoleTextInput);
+    serverThread.join();
     inputThread.join();
     return 0;
 };
