@@ -131,6 +131,7 @@
   <ItemGroup>
     <ClInclude Include="httplib.h" />
     <ClInclude Include="mime_types.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="getlocalipv4.cpp" />
@@ -138,6 +139,12 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mime_types.cpp" />
     <ClCompile Include="writeLog.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="favicon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
