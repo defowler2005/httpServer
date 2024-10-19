@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
                         res.set_content(readFile(fs::current_path().string() + "/404.html"), "text/html");
                     }
                     else {
-                        res.set_content("404: File not found", "text/plain");
+                        res.set_content("404: Main /index.html not found", "text/plain");
                     }; res.status = 404;
                 }
             } });
@@ -147,7 +147,6 @@ int main(int argc, char *argv[])
     log("Enter command at any time!\n");
     std::thread serverThread(startServer, std::ref(server), ip, PORT);
     std::thread inputThread(ConsoleReadKey);
-
     serverThread.join();
     inputThread.join();
     return 0;
