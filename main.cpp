@@ -16,6 +16,9 @@
 #include <windows.h>
 #include <sys/types.h>
 
+//404 function.
+//args one variable.
+
 namespace fs = std::filesystem;
 
 static std::string readFile(const std::string &filePath)
