@@ -1,0 +1,4 @@
+.vs/
+httpServer/
+*.pdb
+CS_httpServer.deps.json
