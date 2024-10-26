@@ -1,0 +1,17 @@
+﻿  main.cpp
+E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(1,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+  (compiling source file 'main.cpp')
+  
+E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(2,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+  (compiling source file 'main.cpp')
+  
+  mime_types.cpp
+  getlocalipv4.cpp
+  isIpValid.cpp
+  writeLog.cpp
+E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(1,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(2,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+  Send404.cpp
+E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\Send404.cpp(100,71): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  Generating Code...
+  CPPhttpServer.vcxproj -> E:\Programming Related\Visual_Studio_Projects\httpServer\x64\Debug\CPPhttpServer.exe

@@ -1,0 +1,15 @@
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\bin\Debug\net8.0\CShttpServer.exe
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\bin\Debug\net8.0\CShttpServer.deps.json
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\bin\Debug\net8.0\CShttpServer.runtimeconfig.json
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\bin\Debug\net8.0\CShttpServer.dll
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\bin\Debug\net8.0\CShttpServer.pdb
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.GeneratedMSBuildEditorConfig.editorconfig
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.AssemblyInfoInputs.cache
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.AssemblyInfo.cs
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.csproj.CoreCompileInputs.cache
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.sourcelink.json
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.dll
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\refint\CShttpServer.dll
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.pdb
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\CShttpServer.genruntimeconfig.cache
+E:\Programming Related\Visual_Studio_Projects\httpServer\CShttpServer\obj\Debug\net8.0\ref\CShttpServer.dll
