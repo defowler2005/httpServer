@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CShttpServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eb8848e60f2b8b34c289636b76d68ef3d09d4431")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c35b38bad6fe02d6d8bfce20f6431aa682ea77ff")]
 [assembly: System.Reflection.AssemblyProductAttribute("CShttpServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CShttpServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

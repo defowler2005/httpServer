@@ -15,15 +15,18 @@
 
 namespace CPPhttpServer
 {
-    static void Send404(SOCKET clientSocket) {
+    static void Send404(SOCKET clientSocket)
+    {
         std::string filePath = std::filesystem::current_path().string() + "\\404.html"; // Adjust for Windows path
         std::string content;
 
-        if (std::filesystem::exists(filePath)) {
+        if (std::filesystem::exists(filePath))
+        {
             std::ifstream file(filePath);
             content.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         }
-        else {
+        else
+        {
             content = R"(
 <!DOCTYPE html>
 <html lang='en-AU'>
@@ -91,11 +94,11 @@ namespace CPPhttpServer
 
         std::stringstream response;
         response << "HTTP/1.1 404 Not Found\r\n"
-            << "Content-Type: text/html\r\n"
-            << "Content-Length: " << content.size() << "\r\n"
-            << "Connection: close\r\n"
-            << "\r\n"
-            << content;
+                 << "Content-Type: text/html\r\n"
+                 << "Content-Length: " << content.size() << "\r\n"
+                 << "Connection: close\r\n"
+                 << "\r\n"
+                 << content;
 
         send(clientSocket, response.str().c_str(), response.str().size(), 0);
 

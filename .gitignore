@@ -1,2 +1,3 @@
 *.pdb
 CShttpServer.deps.json
+.vs/

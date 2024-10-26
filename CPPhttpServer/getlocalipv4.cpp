@@ -37,8 +37,7 @@ static std::string getLocalIPv4() {
         inet_ntop(AF_INET, &(sockaddr_ipv4->sin_addr), ipstr, INET_ADDRSTRLEN);
         ipv4 = std::string(ipstr);
         break;
-    }
-
+    };
     freeaddrinfo(result);
     WSACleanup();
     return ipv4;

@@ -20,7 +20,7 @@
 
 namespace fs = std::filesystem;
 
-static std::string readFile(const std::string& filePath)
+static std::string readFile(const std::string &filePath)
 {
     std::ifstream file(filePath, std::ios::in | std::ios::binary);
     std::ostringstream contents;
@@ -28,7 +28,7 @@ static std::string readFile(const std::string& filePath)
     return contents.str();
 };
 
-static void Send404(const httplib::Request& req, httplib::Response& res)
+static void Send404(const httplib::Request &req, httplib::Response &res)
 {
     std::string filePath = fs::current_path().string() + "/404.html";
 
@@ -59,12 +59,12 @@ static void ConsoleReadKey()
     }
 };
 
-static void startServer(httplib::Server& server, const std::string& ip, int port)
+static void startServer(httplib::Server &server, const std::string &ip, int port)
 {
     server.listen(ip.c_str(), port);
 };
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     std::string ip = "127.0.0.1";
     int PORT = 80;
@@ -100,8 +100,8 @@ int main(int argc, char* argv[])
             log("Can't find computer's local IPv4. Using default IP (localhost:80)...");
     };
 
-    server.Get("/", [&](const httplib::Request& req, httplib::Response& res)
-        {
+    server.Get("/", [&](const httplib::Request &req, httplib::Response &res)
+               {
             std::string client_ip = req.remote_addr;
             std::string filePath = fs::current_path().string() + "/index.html";
             if (fs::exists(filePath)) {
@@ -110,13 +110,13 @@ int main(int argc, char* argv[])
             }
             else Send404(req, res); });
 
-    server.Get("/test", [&](const httplib::Request& req, httplib::Response& res)
-        {
+    server.Get("/test", [&](const httplib::Request &req, httplib::Response &res)
+               {
             res.set_content("Test route tested!", "text/plain");
             log("Client " + req.remote_addr + " accessed the /test route."); });
 
-    server.Get(".*", [&](const httplib::Request& req, httplib::Response& res)
-        {
+    server.Get(".*", [&](const httplib::Request &req, httplib::Response &res)
+               {
             std::string filePath = fs::current_path().string() + req.path;
             if (fs::exists(filePath)) {
                 res.set_content(readFile(filePath), getMimeType(filePath));

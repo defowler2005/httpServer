@@ -2,7 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace CS_httpServer
+namespace CSHttpServer
 {
     internal class ServerUtils
     {
@@ -194,7 +194,7 @@ namespace CS_httpServer
         public static string GetMimeType(string filePath)
         {
             string extension = Path.GetExtension(filePath);
-            return mimeTypes.TryGetValue(extension, out string mimeType) ? mimeType : "application/octet-stream";
+            return mimeTypes.TryGetValue(extension, out string? mimeType) ? mimeType : "application/octet-stream";
         }
     }
 };

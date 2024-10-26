@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <StartupObject>CS_httpServer.Program</StartupObject>
+    <StartupObject>CSHttpServer.Program</StartupObject>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
   </PropertyGroup>
 

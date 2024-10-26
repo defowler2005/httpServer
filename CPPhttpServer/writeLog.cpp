@@ -1,7 +1,8 @@
 #include <chrono>;
 #include <iostream>;
 
-static void log(const std::string& message) {
+static void log(const std::string &message)
+{
     auto now = std::chrono::system_clock::now();
     std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
     std::tm now_tm;

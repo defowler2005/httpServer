@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Diagnostics;
-using static CS_httpServer.ServerUtils;
+using static CSHttpServer.ServerUtils;
 
-namespace CS_httpServer
+namespace CSHttpServer
 {
     public static class Program
     {
@@ -11,7 +11,7 @@ namespace CS_httpServer
             string ip = "127.0.0.1";
             int port = 80;
             string localIP = GetLocalIPv4();
-            string CurrentExecutableName = System.AppDomain.CurrentDomain.FriendlyName;
+            string CurrentExecutableName = AppDomain.CurrentDomain.FriendlyName;
 
             if (args.Length >= 1)
             {

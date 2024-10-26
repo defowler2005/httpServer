@@ -6,6 +6,6 @@
 
 extern std::unordered_map<std::string, std::string> mimeTypes;
 
-std::string getMimeType(const std::string& filePath);
+std::string getMimeType(const std::string &filePath);
 
 #endif
