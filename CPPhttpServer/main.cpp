@@ -16,9 +16,8 @@
 #include <windows.h>
 #include <sys/types.h>
 
-// args one variable => :{.
-
 namespace fs = std::filesystem;
+bool startLocalhost = false;
 
 static std::string readFile(const std::string &filePath)
 {
@@ -61,7 +60,24 @@ static void ConsoleReadKey()
 
 static void startServer(httplib::Server &server, const std::string &ip, int port)
 {
-    server.listen(ip.c_str(), port);
+    try
+    {
+        if (startLocalhost)
+        {
+            server.listen("127.0.0.1", port);
+        }
+        else
+        {
+            server.listen(ip.c_str(), port);
+        }
+    }
+    catch (const std::exception &e)
+    {
+        log("Failed to start the server on port " + std::to_string(port) + ": " + e.what());
+        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "That port " << port << " is currently already in use." << std::endl;
+        exit(1);
+    }
 };
 
 int main(int argc, char *argv[])
@@ -71,34 +87,15 @@ int main(int argc, char *argv[])
     std::string localIP = getLocalIPv4();
     httplib::Server server;
 
-    if (argc >= 3)
-    {
-        log("Arguments were parsed, using them as IP and PORT...");
+    const int result = MessageBox(
+        NULL,
+        L"Click 'Yes' to start the server on 127.0.0.1, or No to start on your local IPv4.",
+        L"Server IP Type",
+        MB_YESNO | MB_ICONQUESTION);
 
-        if (!isIpValid(argv[1]))
-        {
-            log("You have entered an incorrectly structured IP. Structure example: '192.168.1.x.x'");
-            return 0;
-        }
-        else
-            ip = argv[1];
-
-        int portInput = std::stoi(argv[2]);
-        if (portInput < 1025 || portInput > 65535)
-        {
-            log("You have entered an invalid PORT. Port must range from a minimum of 1025 to a maximum of 65535");
-            return 0;
-        }
-        else
-            PORT = portInput;
-    }
-    else
-    {
-        if (!localIP.empty())
-            ip = localIP;
-        else
-            log("Can't find computer's local IPv4. Using default IP (localhost:80)...");
-    };
+    startLocalhost = (result == IDYES);
+    if (!startLocalhost && !localIP.empty())
+        ip = localIP;
 
     server.Get("/", [&](const httplib::Request &req, httplib::Response &res)
                {
@@ -108,7 +105,8 @@ int main(int argc, char *argv[])
                 res.set_content(readFile(filePath), getMimeType(filePath));
                 log("Client " + client_ip + " requested: /index.html");
             }
-            else Send404(req, res); });
+            else
+                Send404(req, res); });
 
     server.Get("/test", [&](const httplib::Request &req, httplib::Response &res)
                {

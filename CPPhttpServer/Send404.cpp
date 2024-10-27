@@ -34,6 +34,7 @@ namespace CPPhttpServer
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>404 - Resource Not Found</title>
+    <!-- Favicon not guaranteed to exist. -->
     <link rel='icon' type='image/x-icon' href='./favicon.ico'>
     <style>
         body {

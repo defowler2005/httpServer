@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>E:\Programming Related\Visual_Studio_Projects\httpServer\x64\Debug\CPPhttpServer.exe</FullPath>
+      <FullPath>E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\x64\CPPhttpServer.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />
