@@ -28,3 +28,13 @@ static bool isIpValid(const std::string &ip)
 
     return true;
 };
+
+static bool isPortValid(const std::string& input) {
+    try {
+        int port = std::stoi(input);
+        return port >= 1025 && port <= 65535;
+    }
+    catch (...) {
+        return false;
+    }
+};

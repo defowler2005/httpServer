@@ -12,12 +12,22 @@
 #include <chrono>
 #include <iomanip>
 #include <thread>
+#include <locale>
+#include <codecvt>
 #include <wininet.h>
 #include <windows.h>
 #include <sys/types.h>
 
 namespace fs = std::filesystem;
 bool startLocalhost = false;
+
+static std::wstring stringToWString(const std::string &str)
+{
+    int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
+    std::wstring wstr(size, 0);
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstr[0], size);
+    return wstr;
+};
 
 static std::string readFile(const std::string &filePath)
 {
@@ -87,31 +97,64 @@ int main(int argc, char *argv[])
     std::string localIP = getLocalIPv4();
     httplib::Server server;
 
-    const int result = MessageBox(
-        NULL,
-        L"Click 'Yes' to start the server on 127.0.0.1, or No to start on your local IPv4.",
-        L"Server IP Type",
-        MB_YESNO | MB_ICONQUESTION);
+    std::string userIp = (argc > 1) ? argv[1] : ip;
+    std::string userPort = (argc > 2) ? argv[2] : std::to_string(PORT);
 
-    startLocalhost = (result == IDYES);
-    if (!startLocalhost && !localIP.empty())
-        ip = localIP;
+    if (argc >= 3)
+    {
+        if (isIpValid(userIp))
+            ip = userIp;
+        else
+        {
+            std::wstring msg = L"The IP address " + stringToWString(userIp) +
+                               L" is unavailable to be used. Use your IPv4? " +
+                               stringToWString(localIP) +
+                               L"\n\nThe program will now start on the default IP configuration.";
+            MessageBox(NULL, msg.c_str(), L"IP address unavailable", MB_OK | MB_ICONEXCLAMATION);
+        }
+
+        try
+        {
+            PORT = std::stoi(userPort);
+        }
+        catch (const std::exception &)
+        {
+            std::wstring msg = L"The PORT " + stringToWString(userPort) +
+                               L" is unavailable to be used. Use your IPv4 and PORT 80?\n\n"
+                               L"The program will now start on the default PORT configuration.";
+            MessageBox(NULL, msg.c_str(), L"IP address unavailable", MB_OK | MB_ICONEXCLAMATION);
+            PORT = 80;
+        }
+        log("Arguments were parsed, they will be used as IP and PORT.");
+    }
+    else
+    {
+        const int result = MessageBox(
+            NULL,
+            L"Click 'Yes' to start the server on 127.0.0.1, or No to start on your local IPv4. Both will use PORT 80",
+            L"Server IP Type",
+            MB_YESNO | MB_ICONQUESTION);
+
+        startLocalhost = (result == IDYES);
+        if (!startLocalhost && !localIP.empty())
+            ip = localIP;
+    };
 
     server.Get("/", [&](const httplib::Request &req, httplib::Response &res)
                {
-            std::string client_ip = req.remote_addr;
-            std::string filePath = fs::current_path().string() + "/index.html";
-            if (fs::exists(filePath)) {
-                res.set_content(readFile(filePath), getMimeType(filePath));
-                log("Client " + client_ip + " requested: /index.html");
-            }
+        std::string client_ip = req.remote_addr;
+        std::string filePath = fs::current_path().string() + "/index.html";
+        if (fs::exists(filePath)) {
+            res.set_content(readFile(filePath), getMimeType(filePath));
+            log("Client " + client_ip + " requested: /index.html");
+        }
             else
                 Send404(req, res); });
 
     server.Get("/test", [&](const httplib::Request &req, httplib::Response &res)
                {
-            res.set_content("Test route tested!", "text/plain");
-            log("Client " + req.remote_addr + " accessed the /test route."); });
+        res.set_content("Test route tested!", "text/plain");
+        log("Client " + req.remote_addr + " accessed the /test route."); });
 
     server.Get(".*", [&](const httplib::Request &req, httplib::Response &res)
                {
