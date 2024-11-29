@@ -1,12 +1,9 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(517,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-  Send404.cpp
-E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\Send404.cpp(104,71): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
   main.cpp
-E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(1,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-  (compiling source file 'main.cpp')
-  
 E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(2,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
   (compiling source file 'main.cpp')
   
-  Generating Code...
+E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(3,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+  (compiling source file 'main.cpp')
+  
   CPPhttpServer.vcxproj -> E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\x64\CPPhttpServer.exe

@@ -1,22 +1,25 @@
-#include "./httplib.h"
-#include "./mime_types.h"
 #include "./getlocalipv4.cpp"
-#include "./writeLog.cpp"
+#include "./httplib.h"
 #include "./isIpValid.cpp"
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <string>
-#include <cstdlib>
+#include "./mime_types.h"
+#include "./writeLog.cpp"
+#include "Send404.cpp"
 #include <chrono>
-#include <iomanip>
-#include <thread>
-#include <locale>
 #include <codecvt>
-#include <wininet.h>
-#include <windows.h>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <locale>
+#include <sstream>
+#include <string>
 #include <sys/types.h>
+#include <thread>
+#ifdef _WIN32
+#include <windows.h>
+#include <wininet.h>
+#endif
 
 namespace fs = std::filesystem;
 bool startLocalhost = false;
@@ -37,18 +40,6 @@ static std::string readFile(const std::string &filePath)
     return contents.str();
 };
 
-static void Send404(const httplib::Request &req, httplib::Response &res)
-{
-    std::string filePath = fs::current_path().string() + "/404.html";
-
-    if (fs::exists(filePath))
-        res.set_content(readFile(filePath), "text/html");
-    else
-        res.set_content("404: Page not found", "text/plain");
-    res.status = 404;
-    log("Client " + req.remote_addr + " requested: " + req.path + ", but the resource does not exist.");
-};
-
 static void ConsoleReadKey()
 {
     std::string input;
@@ -57,14 +48,23 @@ static void ConsoleReadKey()
     {
         std::getline(std::cin, input);
 
-        if (input == "exit" || input == "stop")
+        if (input == "exit")
         {
             log("Stopping the server...");
             Sleep(1345);
             exit(0);
         }
+        else if (input == "about")
+        {
+            MessageBox(
+                NULL,
+                L"Desc",
+                L"Title",
+                MB_HELP | MB_OK
+            );
+        }
         else
-            log("Invalid command: " + input + " commands include: exit\nhelp");
+            log("Invalid command: " + input + " commands include: exit, about");
     }
 };
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
             log("Client " + client_ip + " requested: /index.html");
         }
             else
-                Send404(req, res); });
+                CPPhttpServer::Send404(req, res); });
 
     server.Get("/test", [&](const httplib::Request &req, httplib::Response &res)
                {
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
                 log("Client " + req.remote_addr + " requested: " + req.path);
             }
             else
-                Send404(req, res); });
+                CPPhttpServer::Send404(req, res); });
 
     log("The server is now running on http://" + ip + ":" + std::to_string(PORT));
     log("Enter command at any time!\n");
