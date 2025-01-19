@@ -8,7 +8,7 @@
 #ifndef CPPHTTPLIB_HTTPLIB_H
 #define CPPHTTPLIB_HTTPLIB_H
 
-#define CPPHTTPLIB_VERSION "0.18.3"
+#define CPPHTTPLIB_VERSION "0.18.5"
 
 /*
  * Configuration
@@ -628,6 +628,7 @@ struct Request {
   Ranges ranges;
   Match matches;
   std::unordered_map<std::string, std::string> path_params;
+  std::function<bool()> is_connection_closed = []() { return true; };
 
   // for client
   ResponseHandler response_handler;
@@ -2012,16 +2013,32 @@ inline void duration_to_sec_and_usec(const T &duration, U callback) {
   callback(static_cast<time_t>(sec), static_cast<time_t>(usec));
 }
 
+inline bool is_numeric(const std::string &str) {
+  return !str.empty() && std::all_of(str.begin(), str.end(), ::isdigit);
+}
+
 inline uint64_t get_header_value_u64(const Headers &headers,
                                      const std::string &key, uint64_t def,
-                                     size_t id) {
+                                     size_t id, bool &is_invalid_value) {
+  is_invalid_value = false;
   auto rng = headers.equal_range(key);
   auto it = rng.first;
   std::advance(it, static_cast<ssize_t>(id));
   if (it != rng.second) {
-    return std::strtoull(it->second.data(), nullptr, 10);
+    if (is_numeric(it->second)) {
+      return std::strtoull(it->second.data(), nullptr, 10);
+    } else {
+      is_invalid_value = true;
+    }
   }
   return def;
+}
+
+inline uint64_t get_header_value_u64(const Headers &headers,
+                                     const std::string &key, uint64_t def,
+                                     size_t id) {
+  bool dummy = false;
+  return get_header_value_u64(headers, key, def, id, dummy);
 }
 
 } // namespace detail
@@ -2040,8 +2057,6 @@ inline void default_socket_options(socket_t sock) {
   int opt = 1;
 #ifdef _WIN32
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
-             reinterpret_cast<const char *>(&opt), sizeof(opt));
-  setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
              reinterpret_cast<const char *>(&opt), sizeof(opt));
 #else
 #ifdef SO_REUSEPORT
@@ -2505,6 +2520,60 @@ private:
   void *addr_ = nullptr;
   bool is_open_empty_file = false;
 };
+
+// NOTE: https://www.rfc-editor.org/rfc/rfc9110#section-5
+namespace fields {
+
+inline bool is_token_char(char c) {
+  return std::isalnum(c) || c == '!' || c == '#' || c == '$' || c == '%' ||
+         c == '&' || c == '\'' || c == '*' || c == '+' || c == '-' ||
+         c == '.' || c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
+}
+
+inline bool is_token(const std::string &s) {
+  if (s.empty()) { return false; }
+  for (auto c : s) {
+    if (!is_token_char(c)) { return false; }
+  }
+  return true;
+}
+
+inline bool is_field_name(const std::string &s) { return is_token(s); }
+
+inline bool is_vchar(char c) { return c >= 33 && c <= 126; }
+
+inline bool is_obs_text(char c) { return 128 <= static_cast<unsigned char>(c); }
+
+inline bool is_field_vchar(char c) { return is_vchar(c) || is_obs_text(c); }
+
+inline bool is_field_content(const std::string &s) {
+  if (s.empty()) { return false; }
+
+  if (s.size() == 1) {
+    return is_field_vchar(s[0]);
+  } else if (s.size() == 2) {
+    return is_field_vchar(s[0]) && is_field_vchar(s[1]);
+  } else {
+    size_t i = 0;
+
+    if (!is_field_vchar(s[i])) { return false; }
+    i++;
+
+    while (i < s.size() - 1) {
+      auto c = s[i++];
+      if (c == ' ' || c == '\t' || is_field_vchar(c)) {
+      } else {
+        return false;
+      }
+    }
+
+    return is_field_vchar(s[i]);
+  }
+}
+
+inline bool is_field_value(const std::string &s) { return is_field_content(s); }
+
+} // namespace fields
 
 } // namespace detail
 
@@ -4386,8 +4455,14 @@ bool read_content(Stream &strm, T &x, size_t payload_max_length, int &status,
         } else if (!has_header(x.headers, "Content-Length")) {
           ret = read_content_without_length(strm, out);
         } else {
-          auto len = get_header_value_u64(x.headers, "Content-Length", 0, 0);
-          if (len > payload_max_length) {
+          auto is_invalid_value = false;
+          auto len = get_header_value_u64(x.headers, "Content-Length",
+                                          std::numeric_limits<uint64_t>::max(),
+                                          0, is_invalid_value);
+
+          if (is_invalid_value) {
+            ret = false;
+          } else if (len > payload_max_length) {
             exceed_payload_max_length = true;
             skip_content_with_length(strm, len);
             ret = false;
@@ -5166,7 +5241,7 @@ inline bool range_error(Request &req, Response &res) {
       // representation).
       // https://www.rfc-editor.org/rfc/rfc9110.html#section-14.1.2-6
       if (last_pos == -1 || last_pos >= contant_len) {
-          last_pos = contant_len - 1;
+        last_pos = contant_len - 1;
       }
 
       // Range must be within content length
@@ -5699,7 +5774,8 @@ inline size_t Request::get_header_value_count(const std::string &key) const {
 
 inline void Request::set_header(const std::string &key,
                                 const std::string &val) {
-  if (!detail::has_crlf(key) && !detail::has_crlf(val)) {
+  if (detail::fields::is_field_name(key) &&
+      detail::fields::is_field_value(val)) {
     headers.emplace(key, val);
   }
 }
@@ -5765,13 +5841,14 @@ inline size_t Response::get_header_value_count(const std::string &key) const {
 
 inline void Response::set_header(const std::string &key,
                                  const std::string &val) {
-  if (!detail::has_crlf(key) && !detail::has_crlf(val)) {
+  if (detail::fields::is_field_name(key) &&
+      detail::fields::is_field_value(val)) {
     headers.emplace(key, val);
   }
 }
 
 inline void Response::set_redirect(const std::string &url, int stat) {
-  if (!detail::has_crlf(url)) {
+  if (detail::fields::is_field_value(url)) {
     set_header("Location", url);
     if (300 <= stat && stat < 400) {
       this->status = stat;
@@ -7140,6 +7217,11 @@ Server::process_request(Stream &strm, const std::string &remote_addr,
       return write_response(strm, true, req, res);
     }
   }
+
+  // Setup `is_connection_closed` method
+  req.is_connection_closed = [&]() {
+    return !detail::is_socket_alive(strm.socket());
+  };
 
   // Routing
   auto routed = false;
