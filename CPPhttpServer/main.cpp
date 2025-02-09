@@ -24,7 +24,7 @@
 namespace fs = std::filesystem;
 bool startLocalhost = false;
 
-static std::wstring stringToWString(const std::string &str)
+static std::wstring stringToWString(const std::string& str)
 {
     int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
     std::wstring wstr(size, 0);
@@ -32,7 +32,7 @@ static std::wstring stringToWString(const std::string &str)
     return wstr;
 };
 
-static std::string readFile(const std::string &filePath)
+static std::string readFile(const std::string& filePath)
 {
     std::ifstream file(filePath, std::ios::in | std::ios::binary);
     std::ostringstream contents;
@@ -58,15 +58,9 @@ static void ConsoleReadKey()
         {
             MessageBox(
                 NULL,
-<<<<<<< HEAD
                 L"This program is a webserver, it can be used for hosting websites if set up correctly.\n\n",
                 L"About HTTP Server",
                 MB_ICONINFORMATION | MB_OK
-=======
-                L"Desc",
-                L"Title",
-                MB_HELP | MB_OK
->>>>>>> 75a9253859a7f4f8930b6941bcb5b1cb2906b7e9
             );
         }
         else
@@ -74,7 +68,7 @@ static void ConsoleReadKey()
     }
 };
 
-static void startServer(httplib::Server &server, const std::string &ip, int port)
+static void startServer(httplib::Server& server, const std::string& ip, int port)
 {
     try
     {
@@ -87,7 +81,7 @@ static void startServer(httplib::Server &server, const std::string &ip, int port
             server.listen(ip.c_str(), port);
         }
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         log("Failed to start the server on port " + std::to_string(port) + ": " + e.what());
         std::cerr << "Error: " << e.what() << std::endl;
@@ -96,7 +90,7 @@ static void startServer(httplib::Server &server, const std::string &ip, int port
     }
 };
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     std::string ip = "127.0.0.1";
     int PORT = 80;
@@ -113,9 +107,9 @@ int main(int argc, char *argv[])
         else
         {
             std::wstring msg = L"The IP address " + stringToWString(userIp) +
-                               L" is unavailable to be used. Use your IPv4? " +
-                               stringToWString(localIP) +
-                               L"\n\nThe program will now start on the default IP configuration.";
+                L" is unavailable to be used. Use your IPv4? " +
+                stringToWString(localIP) +
+                L"\n\nThe program will now start on the default IP configuration.";
             MessageBox(NULL, msg.c_str(), L"IP address unavailable", MB_OK | MB_ICONEXCLAMATION);
         }
 
@@ -123,11 +117,11 @@ int main(int argc, char *argv[])
         {
             PORT = std::stoi(userPort);
         }
-        catch (const std::exception &)
+        catch (const std::exception&)
         {
             std::wstring msg = L"The PORT " + stringToWString(userPort) +
-                               L" is unavailable to be used. Use your IPv4 and PORT 80?\n\n"
-                               L"The program will now start on the default PORT configuration.";
+                L" is unavailable to be used. Use your IPv4 and PORT 80?\n\n"
+                L"The program will now start on the default PORT configuration.";
             MessageBox(NULL, msg.c_str(), L"IP address unavailable", MB_OK | MB_ICONEXCLAMATION);
             PORT = 80;
         }
@@ -146,24 +140,24 @@ int main(int argc, char *argv[])
             ip = localIP;
     };
 
-    server.Get("/", [&](const httplib::Request &req, httplib::Response &res)
-               {
-        std::string client_ip = req.remote_addr;
-        std::string filePath = fs::current_path().string() + "/index.html";
-        if (fs::exists(filePath)) {
-            res.set_content(readFile(filePath), getMimeType(filePath));
-            log("Client " + client_ip + " requested: /index.html");
-        }
+    server.Get("/", [&](const httplib::Request& req, httplib::Response& res)
+        {
+            std::string client_ip = req.remote_addr;
+            std::string filePath = fs::current_path().string() + "/index.html";
+            if (fs::exists(filePath)) {
+                res.set_content(readFile(filePath), getMimeType(filePath));
+                log("Client " + client_ip + " requested: /index.html");
+            }
             else
                 CPPhttpServer::Send404(req, res); });
 
-    server.Get("/test", [&](const httplib::Request &req, httplib::Response &res)
-               {
-        res.set_content("Test route tested!", "text/plain");
-        log("Client " + req.remote_addr + " accessed the /test route."); });
+    server.Get("/test", [&](const httplib::Request& req, httplib::Response& res)
+        {
+            res.set_content("Test route tested!", "text/plain");
+            log("Client " + req.remote_addr + " accessed the /test route."); });
 
-    server.Get(".*", [&](const httplib::Request &req, httplib::Response &res)
-               {
+    server.Get(".*", [&](const httplib::Request& req, httplib::Response& res)
+        {
             std::string filePath = fs::current_path().string() + req.path;
             if (fs::exists(filePath)) {
                 res.set_content(readFile(filePath), getMimeType(filePath));
