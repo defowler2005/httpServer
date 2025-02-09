@@ -58,9 +58,15 @@ static void ConsoleReadKey()
         {
             MessageBox(
                 NULL,
+<<<<<<< HEAD
                 L"This program is a webserver, it can be used for hosting websites if set up correctly.\n\n",
                 L"About HTTP Server",
                 MB_ICONINFORMATION | MB_OK
+=======
+                L"Desc",
+                L"Title",
+                MB_HELP | MB_OK
+>>>>>>> 75a9253859a7f4f8930b6941bcb5b1cb2906b7e9
             );
         }
         else
