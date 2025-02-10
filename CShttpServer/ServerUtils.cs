@@ -58,7 +58,7 @@ namespace CSHttpServer
         public static void Log(string message)
         {
             string timeString = DateTime.Now.ToString("dd-MM-yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
-            Console.WriteLine($"[{timeString}] {message}");
+            Console.WriteLine($"[{timeString}] - {message}");
         }
 
         public static string GetLocalIPv4()
@@ -174,20 +174,32 @@ namespace CSHttpServer
             {
                 string? input = Console.ReadLine();
 
-                if (input != null)
+                if (string.IsNullOrWhiteSpace(input))
                 {
-                    if (input == "exit" || input == "stop")
-                    {
+                    Log("Received a null input. Please type a valid command.");
+                    continue;
+                }
+
+                switch (input)
+                {
+                    case "exit":
+                    case "stop":
+                        // Close the server before the process itself.
                         Log("Stopping the server...");
-                        Thread.Sleep(1345);
                         listener.Stop();
                         Environment.Exit(0);
-                    }
-                    else
-                        Log($"Invalid command: {input}. Commands include: exit\nhelp");
+                        break;
+                        case "about":
+                        Log("This C# program is a webserver, it can be used for hosting websites if set up correctly.");
+                        break;
+                    case "test":
+                    case "fucker":
+                        Log("Test command executed successfully.");
+                        break;
+                    default:
+                        Log($"Invalid command: {input}. Commands include: exit, fucker, test.");
+                        break;
                 }
-                else
-                    Log("Received a null input. Please type a valid command.");
             }
         }
 

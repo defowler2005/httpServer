@@ -7,6 +7,7 @@ E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.
   (compiling source file 'Send404.cpp')
   
   getlocalipv4.cpp
+  isIpValid.cpp
   main.cpp
 E:\Programming Related\Visual_Studio_Projects\httpServer\CPPhttpServer\writeLog.cpp(2,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
   (compiling source file 'main.cpp')

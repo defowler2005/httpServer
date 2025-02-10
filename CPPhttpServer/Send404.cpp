@@ -52,13 +52,8 @@ namespace CPPhttpServer
             The resource you are looking for was either missing or was moved, likely removed.
          </p>
          <a href='/' style="
-<<<<<<< HEAD
             font-size: 16px;
             text-decoration: none;
-=======
-            font-size: 16px; 
-            text-decoration: none; 
->>>>>>> 75a9253859a7f4f8930b6941bcb5b1cb2906b7e9
             color: #2196F3; 
             border: 2px solid #2196F3; 
             padding: 10px 20px; 
