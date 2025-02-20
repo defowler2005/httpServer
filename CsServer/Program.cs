@@ -116,9 +116,12 @@ namespace CsServer
                         {
                             Log($"Client {clientIp} requested {requestedPath} (404 Not Found)\n");
                             context.Response.StatusCode = 404;
-                            using StreamWriter writer = new(context.Response.OutputStream);
                             context.Response.ContentType = "text/html";
-                            writer.Write($"<h3 style='color: red;'>The requested file {requestedPath} was not found on the server.</h3>");
+                            string File404 = Path.Combine(Directory.GetCurrentDirectory(), "404.html");
+                            using StreamWriter writer = new(context.Response.OutputStream);
+                            
+                            if (File.Exists(File404)) writer.Write(ReadFile(File404));
+                            else writer.Write($"<h3 style='color: red;'>The requested file {requestedPath} was not found on the server.</h3>");
                         }
                     }; context.Response.OutputStream.Close();
                 }

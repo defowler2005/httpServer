@@ -98,9 +98,12 @@ int main()
 		}
 		else
 		{
-			log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
 			res.status = httplib::StatusCode::NotFound_404;
-			res.set_content("<h3 style='color: red;'>The requested file " + req.path + " was not found on the server.</h3>", "text/html");
+			std::string File404 = fs::current_path().string() + "/404.html";
+			log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
+
+			if (fs::exists(File404)) res.set_content(readFile(File404), "text/html");
+			else res.set_content("<h3 style='color: red;'>The requested file " + req.path + " was not found on the server.</h3>", "text/html");
 		}
 	}
 );
