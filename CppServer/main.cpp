@@ -3,6 +3,12 @@
 #include <filesystem>;
 #include <iostream>;
 
+ ////////
+ // TODO:
+ // ADD USER DEFINED CONFIGURATION FILE LATER.
+ // CONFIG OPTIONS: IP, PORT, MIME-TYPES, LOG TO FILE, BLACK LISTED FILE OR FOLDER PATHS AND OTHER SECURITY MESURES.
+ ///////
+
 namespace fs = std::filesystem;
 
 static std::string getMimeType(const std::string &extension)
@@ -30,6 +36,8 @@ static std::string getMimeType(const std::string &extension)
 		{".pdf", "application/pdf"},
 		{".zip", "application/zip"},
 		{".gz", "application/gzip"},
+		{".woff", "font/woff"},
+		{".woff2", "font/woff2"},
 	};
 
 	auto it = mime_types.find(extension);
