@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CsServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9169ba343463a83931da05ed705ff52c209299ea")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2be61be6a605802248d21075922fdec7801378c4")]
 [assembly: System.Reflection.AssemblyProductAttribute("CsServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CsServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
