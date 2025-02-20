@@ -1,11 +1,12 @@
 #include "./httplib.h";
 #include <chrono>;
-#include <filesystem>
+#include <filesystem>;
 #include <iostream>;
 
 namespace fs = std::filesystem;
 
-static std::string getMimeType(const std::string& extension) {
+static std::string getMimeType(const std::string &extension)
+{
 	static const std::unordered_map<std::string, std::string> mime_types = {
 		{".html", "text/html"},
 		{".htm", "text/html"},
@@ -32,16 +33,17 @@ static std::string getMimeType(const std::string& extension) {
 	};
 
 	auto it = mime_types.find(extension);
-	if (it != mime_types.end()) {
-		return it-> second;
-	}; return "application/octet-stream";
+	if (it != mime_types.end())
+	return it->second;
+	else return "application/octet-stream";
 };
 
-static std::string readFile(const std::string& filePath)
+static std::string readFile(const std::string &filePath)
 {
 	std::ifstream file(filePath, std::ios::in | std::ios::binary);
 
-	if (!file) {
+	if (!file)
+	{
 		return "";
 	};
 	std::ostringstream contents;
@@ -49,7 +51,7 @@ static std::string readFile(const std::string& filePath)
 	return contents.str();
 };
 
-static void log(const std::string& message)
+static void log(const std::string &message)
 {
 	auto now = std::chrono::system_clock::now();
 	std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
@@ -67,8 +69,8 @@ int main()
 	std::string ip = "0.0.0.0";
 	int port = 6432;
 
-	svr.Get("/", [&](const httplib::Request& req, httplib::Response& res) // Root path.
-		{
+	svr.Get("/", [&](const httplib::Request &req, httplib::Response &res) // Root path.
+			{
 			std::string client_ip = req.remote_addr;
 			std::string filePath = (fs::current_path() / "index.html").string();
 
@@ -80,20 +82,22 @@ int main()
 				log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
 				res.status = 404;
 				res.set_content("<h3 style='color: red;'>Main index.html file not found.</h1>", "text/html");
-			}
-		}
-	);
+		} 
+	}
+);
 
-	svr.Get(".*", [&](const httplib::Request& req, httplib::Response& res) { // Any file.
+	svr.Get(".*", [&](const httplib::Request &req, httplib::Response &res) { // Any file.
 		std::string client_ip = req.remote_addr;
 		std::string filePath = fs::current_path().string() + req.path;
 		std::filesystem::path file(filePath);
 
-		if (fs::exists(filePath)) {
+		if (fs::exists(filePath))
+		{
 			res.set_content(readFile(filePath), getMimeType(file.extension().string()));
 			log("Client " + client_ip + " requested " + req.path + " (200 OK)\n");
 		}
-		else {
+		else
+		{
 			log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
 			res.status = httplib::StatusCode::NotFound_404;
 			res.set_content("<h3 style='color: red;'>The requested file " + req.path + " was not found on the server.</h3>", "text/html");
@@ -106,7 +110,7 @@ int main()
 		log("Server listening on " + ip + ":" + std::to_string(port) + " All network interfaces.\n");
 		svr.listen(ip, port);
 	}
-	catch (const std::exception& error)
+	catch (const std::exception &error)
 	{
 		std::cout << "An error occured while running the server program: " << error.what();
 	}

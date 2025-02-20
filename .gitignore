@@ -1,3 +1,4 @@
 *.pdb
 *.deps.json
 .vs/
+./vscode/
