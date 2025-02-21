@@ -4,4 +4,6 @@ D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\main.cpp(1,10
 D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\main.cpp(2,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
 D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\main.cpp(3,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
 D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\main.cpp(4,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\main.cpp(5,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\main.cpp(102,32): warning C4101: 'error': unreferenced local variable
   CppServer.vcxproj -> D:\Programming Related\Visual_Studio_Projects\httpServer\CppServer\x64\CppServer.exe

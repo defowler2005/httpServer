@@ -1,15 +1,16 @@
 #include "./httplib.h";
+#include "./json.h";
 #include <chrono>;
 #include <filesystem>;
 #include <iostream>;
 
  ////////
  // TODO:
- // ADD USER DEFINED CONFIGURATION FILE LATER.
- // CONFIG OPTIONS: IP, PORT, MIME-TYPES, LOG TO FILE, BLACK LISTED FILE OR FOLDER PATHS AND OTHER SECURITY MESURES.
+ // CONFIG OPTIONS: MIME-TYPES, BLACK LISTED FILE OR FOLDER PATHS AND OTHER SECURITY MESURES.
  ///////
 
 namespace fs = std::filesystem;
+using json = nlohmann::json;
 
 static std::string getMimeType(const std::string &extension)
 {
@@ -42,7 +43,7 @@ static std::string getMimeType(const std::string &extension)
 
 	auto it = mime_types.find(extension);
 	if (it != mime_types.end())
-	return it->second;
+	return it -> second;
 	else return "application/octet-stream";
 };
 
@@ -59,16 +60,23 @@ static std::string readFile(const std::string &filePath)
 	return contents.str();
 };
 
-static void log(const std::string &message)
-{
+static void log(const std::string& message) {
 	auto now = std::chrono::system_clock::now();
 	std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
 	std::tm now_tm;
+#	ifdef _WIN32
 	localtime_s(&now_tm, &now_time_t);
+	#else
+	localtime_r(&now_time_t, &now_tm);
+	#endif
 	std::ostringstream timeStream;
 	timeStream << std::put_time(&now_tm, "%Y-%m-%d %H:%M:%S");
 	std::string timeString = timeStream.str();
-	std::cout << "[" << timeString << "] " << message << std::endl;
+	std::string formattedLog = "[" + timeString + "] - " + message;
+	std::cout << formattedLog << std::endl;
+	std::ofstream logFile("./CppServerLog.log", std::ios::app);
+	logFile << formattedLog << std::endl;
+	logFile.close();
 };
 
 int main()
@@ -76,8 +84,44 @@ int main()
 	httplib::Server svr;
 	std::string ip = "0.0.0.0";
 	int port = 6432;
+	std::string configFile = (fs::current_path() / "CppServerConfig.json").string();
 
-	svr.Get("/", [&](const httplib::Request &req, httplib::Response &res) // Root path.
+	if (fs::exists(configFile)) {
+		try
+		{
+			log("Config found!\n");
+			std::ifstream dataFile("./CppServerConfig.json");
+			json data = json::parse(dataFile);
+
+			std::string newIp = data["ip"];
+			std::string newPort = std::to_string(data["port"].get<int>());
+
+			ip = newIp.empty() ? ip : newIp;
+			port = newPort.empty() ? port : std::stoi(newPort);
+		}
+		catch (const std::exception& error)
+		{
+			log("Failed to parse JSON, is your IP valid? is your PORT valid?");
+		}
+	}
+	else {
+		log("Config not found! Writing to new CppServerConfig.json!\n");
+		std::ofstream file("CppServerConfig.json");
+
+		json configData = json::parse(R"(
+			{   
+				"_comment0" : "This is your current default configuration for the server.",
+				"_comment1" : "You can change the IP and port to whatever you want to be, but make sure the values are valid. Otherwise the program will crash with no information or warning.",
+				"ip": "0.0.0.0",
+				"port": 6432
+			}
+		)");
+
+		// Actually writing JSON data to the fuckin file!
+		file << configData.dump(4);
+	};
+
+	svr.Get("/", [&](const httplib::Request &req, httplib::Response &res) // Root path (./index.html).
 			{
 			std::string client_ip = req.remote_addr;
 			std::string filePath = (fs::current_path() / "index.html").string();
@@ -94,7 +138,7 @@ int main()
 	}
 );
 
-	svr.Get(".*", [&](const httplib::Request &req, httplib::Response &res) { // Any file.
+	svr.Get(".*", [&](const httplib::Request &req, httplib::Response &res) { // Any file (*/*.*).
 		std::string client_ip = req.remote_addr;
 		std::string filePath = fs::current_path().string() + req.path;
 		std::filesystem::path file(filePath);
