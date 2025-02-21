@@ -6,14 +6,14 @@
 
  ////////
  // TODO:
- // IMPLIMENT READFILE 501 LOGIC.
  // CONFIG OPTIONS: BLACK LISTED FILE OR FOLDER PATHS.
+ // IMPLIMENT: READFILE 500 LOGIC.
  ///////
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 httplib::Server svr;
-std::string custom404Page = "<h3 style='color: red;'>404 - That file not found on this server.</h1>";
+std::string custom404Page = "<h3 style='color: red;'>404 - Not found: That file not found on this server.</h1>";
 std::string configFile = (fs::current_path() / "CppServerConfig.json").string();
 std::string ip = "0.0.0.0";
 int port = 6432;
@@ -59,8 +59,9 @@ static std::string readFile(const std::string &filePath)
 
 	if (!file)
 	{
-		return "<h3 style='color: red;'>501 - Internal server error: Failed to read requested file </h3>";
+            return "<h3 style='color: red;'>500 - Internal server error: Failed to read requested file </h3>";
 	};
+
 	std::ostringstream contents;
 	contents << file.rdbuf();
 	return contents.str();
@@ -87,7 +88,7 @@ static void log(const std::string& message) {
 
 static void handleConfig()
 {
-	// This function will automaically look for a little file called CppServerConfig.json and parse it to find cofigs for the server settings. Though where called, the function cn be commented out.
+	// This function will automaically look for a little file called CppServerConfig.json and parse it to find configs for the server settings. Though where called, the function can be commented out.
 	if (fs::exists(configFile)) {
 		try
 		{
@@ -117,7 +118,7 @@ static void handleConfig()
 		json configData = json::parse(R"(
 			{   
 				"comments": {
-                "_comment0" : "This is the current default configuration for the server.",
+                                "_comment0" : "This is the current default configuration for the server.",
 				"_comment1" : "You can change the ip and port as long as they are valid, if they are malformed in any way, the program will close (crash) with no warning or errors.",
 				"_comment2" : "If you have a custom 404 page, great! set the relative file path, for example: errorPages/my404.html, if left blank or file doesn't exist, the server will use a predefined 404 page"
             },
