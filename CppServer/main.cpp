@@ -6,6 +6,7 @@
 
  ////////
  // TODO:
+ // IMPLIMENT READFILE 501 LOGIC.
  // CONFIG OPTIONS: BLACK LISTED FILE OR FOLDER PATHS.
  ///////
 
@@ -58,7 +59,7 @@ static std::string readFile(const std::string &filePath)
 
 	if (!file)
 	{
-		return "";
+		return "<h3 style='color: red;'>501 - Internal server error: Failed to read requested file </h3>";
 	};
 	std::ostringstream contents;
 	contents << file.rdbuf();
@@ -132,7 +133,7 @@ static void handleConfig()
 	};
 };
 
-int main()
+int main() an
 {
 	handleConfig();
 	svr.Get("/", [&](const httplib::Request &req, httplib::Response &res) // Root path (./index.html).
