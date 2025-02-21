@@ -145,12 +145,6 @@
 #define CPPHTTPLIB_LISTEN_BACKLOG 5
 #endif
 
-#if !defined(CPPHTTPLIB_USE_POLL) && !defined(CPPHTTPLIB_USE_SELECT)
-#define CPPHTTPLIB_USE_POLL
-#elif defined(CPPHTTPLIB_USE_POLL) && defined(CPPHTTPLIB_USE_SELECT)
-#error "CPPHTTPLIB_USE_POLL and CPPHTTPLIB_USE_SELECT are mutually exclusive"
-#endif
-
  /*
   * Headers
   */
@@ -200,9 +194,7 @@ using ssize_t = long;
 
 using socket_t = SOCKET;
 using socklen_t = int;
-#ifdef CPPHTTPLIB_USE_POLL
 #define poll(fds, nfds, timeout) WSAPoll(fds, nfds, timeout)
-#endif
 
 #else // not _WIN32
 
@@ -222,16 +214,11 @@ using socklen_t = int;
 #ifdef __linux__
 #include <resolv.h>
 #endif
-#include <netinet/tcp.h>
-#ifdef CPPHTTPLIB_USE_POLL
-#include <poll.h>
-#endif
 #include <csignal>
+#include <netinet/tcp.h>
+#include <poll.h>
 #include <pthread.h>
 #include <sys/mman.h>
-#ifndef __VMS
-#include <sys/select.h>
-#endif
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -753,7 +740,8 @@ namespace httplib {
         virtual ~Stream() = default;
 
         virtual bool is_readable() const = 0;
-        virtual bool is_writable() const = 0;
+        virtual bool wait_readable() const = 0;
+        virtual bool wait_writable() const = 0;
 
         virtual ssize_t read(char* ptr, size_t size) = 0;
         virtual ssize_t write(const char* ptr, size_t size) = 0;
@@ -2470,7 +2458,8 @@ namespace httplib {
             ~BufferStream() override = default;
 
             bool is_readable() const override;
-            bool is_writable() const override;
+            bool wait_readable() const override;
+            bool wait_writable() const override;
             ssize_t read(char* ptr, size_t size) override;
             ssize_t write(const char* ptr, size_t size) override;
             void get_remote_ip_and_port(std::string& ip, int& port) const override;
@@ -3296,7 +3285,6 @@ namespace httplib {
 
         template <bool Read>
         inline ssize_t select_impl(socket_t sock, time_t sec, time_t usec) {
-#ifdef CPPHTTPLIB_USE_POLL
             struct pollfd pfd;
             pfd.fd = sock;
             pfd.events = (Read ? POLLIN : POLLOUT);
@@ -3304,25 +3292,6 @@ namespace httplib {
             auto timeout = static_cast<int>(sec * 1000 + usec / 1000);
 
             return handle_EINTR([&]() { return poll(&pfd, 1, timeout); });
-#else
-#ifndef _WIN32
-            if (sock >= FD_SETSIZE) { return -1; }
-#endif
-
-            fd_set fds, * rfds, * wfds;
-            FD_ZERO(&fds);
-            FD_SET(sock, &fds);
-            rfds = (Read ? &fds : nullptr);
-            wfds = (Read ? nullptr : &fds);
-
-            timeval tv;
-            tv.tv_sec = static_cast<long>(sec);
-            tv.tv_usec = static_cast<decltype(tv.tv_usec)>(usec);
-
-            return handle_EINTR([&]() {
-                return select(static_cast<int>(sock + 1), rfds, wfds, nullptr, &tv);
-                });
-#endif
         }
 
         inline ssize_t select_read(socket_t sock, time_t sec, time_t usec) {
@@ -3335,7 +3304,6 @@ namespace httplib {
 
         inline Error wait_until_socket_is_ready(socket_t sock, time_t sec,
             time_t usec) {
-#ifdef CPPHTTPLIB_USE_POLL
             struct pollfd pfd_read;
             pfd_read.fd = sock;
             pfd_read.events = POLLIN | POLLOUT;
@@ -3356,38 +3324,6 @@ namespace httplib {
             }
 
             return Error::Connection;
-#else
-#ifndef _WIN32
-            if (sock >= FD_SETSIZE) { return Error::Connection; }
-#endif
-
-            fd_set fdsr;
-            FD_ZERO(&fdsr);
-            FD_SET(sock, &fdsr);
-
-            auto fdsw = fdsr;
-            auto fdse = fdsr;
-
-            timeval tv;
-            tv.tv_sec = static_cast<long>(sec);
-            tv.tv_usec = static_cast<decltype(tv.tv_usec)>(usec);
-
-            auto ret = handle_EINTR([&]() {
-                return select(static_cast<int>(sock + 1), &fdsr, &fdsw, &fdse, &tv);
-                });
-
-            if (ret == 0) { return Error::ConnectionTimeout; }
-
-            if (ret > 0 && (FD_ISSET(sock, &fdsr) || FD_ISSET(sock, &fdsw))) {
-                auto error = 0;
-                socklen_t len = sizeof(error);
-                auto res = getsockopt(sock, SOL_SOCKET, SO_ERROR,
-                    reinterpret_cast<char*>(&error), &len);
-                auto successful = res >= 0 && !error;
-                return successful ? Error::Success : Error::Connection;
-            }
-            return Error::Connection;
-#endif
         }
 
         inline bool is_socket_alive(socket_t sock) {
@@ -3412,7 +3348,8 @@ namespace httplib {
             ~SocketStream() override;
 
             bool is_readable() const override;
-            bool is_writable() const override;
+            bool wait_readable() const override;
+            bool wait_writable() const override;
             ssize_t read(char* ptr, size_t size) override;
             ssize_t write(const char* ptr, size_t size) override;
             void get_remote_ip_and_port(std::string& ip, int& port) const override;
@@ -3448,7 +3385,8 @@ namespace httplib {
             ~SSLSocketStream() override;
 
             bool is_readable() const override;
-            bool is_writable() const override;
+            bool wait_readable() const override;
+            bool wait_writable() const override;
             ssize_t read(char* ptr, size_t size) override;
             ssize_t write(const char* ptr, size_t size) override;
             void get_remote_ip_and_port(std::string& ip, int& port) const override;
@@ -4627,7 +4565,7 @@ namespace httplib {
 
             data_sink.write = [&](const char* d, size_t l) -> bool {
                 if (ok) {
-                    if (strm.is_writable() && write_data(strm, d, l)) {
+                    if (write_data(strm, d, l)) {
                         offset += l;
                     }
                     else {
@@ -4637,10 +4575,10 @@ namespace httplib {
                 return ok;
                 };
 
-            data_sink.is_writable = [&]() -> bool { return strm.is_writable(); };
+            data_sink.is_writable = [&]() -> bool { return strm.wait_writable(); };
 
             while (offset < end_offset && !is_shutting_down()) {
-                if (!strm.is_writable()) {
+                if (!strm.wait_writable()) {
                     error = Error::Write;
                     return false;
                 }
@@ -4680,17 +4618,17 @@ namespace httplib {
             data_sink.write = [&](const char* d, size_t l) -> bool {
                 if (ok) {
                     offset += l;
-                    if (!strm.is_writable() || !write_data(strm, d, l)) { ok = false; }
+                    if (!write_data(strm, d, l)) { ok = false; }
                 }
                 return ok;
                 };
 
-            data_sink.is_writable = [&]() -> bool { return strm.is_writable(); };
+            data_sink.is_writable = [&]() -> bool { return strm.wait_writable(); };
 
             data_sink.done = [&](void) { data_available = false; };
 
             while (data_available && !is_shutting_down()) {
-                if (!strm.is_writable()) {
+                if (!strm.wait_writable()) {
                     return false;
                 }
                 else if (!content_provider(offset, 0, data_sink)) {
@@ -4727,10 +4665,7 @@ namespace httplib {
                             // Emit chunked response header and footer for each chunk
                             auto chunk =
                                 from_i_to_hex(payload.size()) + "\r\n" + payload + "\r\n";
-                            if (!strm.is_writable() ||
-                                !write_data(strm, chunk.data(), chunk.size())) {
-                                ok = false;
-                            }
+                            if (!write_data(strm, chunk.data(), chunk.size())) { ok = false; }
                         }
                     }
                     else {
@@ -4740,7 +4675,7 @@ namespace httplib {
                 return ok;
                 };
 
-            data_sink.is_writable = [&]() -> bool { return strm.is_writable(); };
+            data_sink.is_writable = [&]() -> bool { return strm.wait_writable(); };
 
             auto done_with_trailer = [&](const Headers* trailer) {
                 if (!ok) { return; }
@@ -4760,8 +4695,7 @@ namespace httplib {
                 if (!payload.empty()) {
                     // Emit chunked response header and footer for each chunk
                     auto chunk = from_i_to_hex(payload.size()) + "\r\n" + payload + "\r\n";
-                    if (!strm.is_writable() ||
-                        !write_data(strm, chunk.data(), chunk.size())) {
+                    if (!write_data(strm, chunk.data(), chunk.size())) {
                         ok = false;
                         return;
                     }
@@ -4793,7 +4727,7 @@ namespace httplib {
                 };
 
             while (data_available && !is_shutting_down()) {
-                if (!strm.is_writable()) {
+                if (!strm.wait_writable()) {
                     error = Error::Write;
                     return false;
                 }
@@ -6101,6 +6035,10 @@ namespace httplib {
         inline SocketStream::~SocketStream() = default;
 
         inline bool SocketStream::is_readable() const {
+            return read_buff_off_ < read_buff_content_size_;
+        }
+
+        inline bool SocketStream::wait_readable() const {
             if (max_timeout_msec_ <= 0) {
                 return select_read(sock_, read_timeout_sec_, read_timeout_usec_) > 0;
             }
@@ -6113,7 +6051,7 @@ namespace httplib {
             return select_read(sock_, read_timeout_sec, read_timeout_usec) > 0;
         }
 
-        inline bool SocketStream::is_writable() const {
+        inline bool SocketStream::wait_writable() const {
             return select_write(sock_, write_timeout_sec_, write_timeout_usec_) > 0 &&
                 is_socket_alive(sock_);
         }
@@ -6141,7 +6079,7 @@ namespace httplib {
                 }
             }
 
-            if (!is_readable()) { return -1; }
+            if (!wait_readable()) { return -1; }
 
             read_buff_off_ = 0;
             read_buff_content_size_ = 0;
@@ -6169,7 +6107,7 @@ namespace httplib {
         }
 
         inline ssize_t SocketStream::write(const char* ptr, size_t size) {
-            if (!is_writable()) { return -1; }
+            if (!wait_writable()) { return -1; }
 
 #if defined(_WIN32) && !defined(_WIN64)
             size =
@@ -6200,7 +6138,9 @@ namespace httplib {
         // Buffer stream implementation
         inline bool BufferStream::is_readable() const { return true; }
 
-        inline bool BufferStream::is_writable() const { return true; }
+        inline bool BufferStream::wait_readable() const { return true; }
+
+        inline bool BufferStream::wait_writable() const { return true; }
 
         inline ssize_t BufferStream::read(char* ptr, size_t size) {
 #if defined(_MSC_VER) && _MSC_VER < 1910
@@ -7311,20 +7251,6 @@ namespace httplib {
         Response res;
         res.version = "HTTP/1.1";
         res.headers = default_headers_;
-
-#ifdef _WIN32
-        // TODO: Increase FD_SETSIZE statically (libzmq), dynamically (MySQL).
-#else
-#ifndef CPPHTTPLIB_USE_POLL
-        // Socket file descriptor exceeded FD_SETSIZE...
-        if (strm.socket() >= FD_SETSIZE) {
-            Headers dummy;
-            detail::read_headers(strm, dummy);
-            res.status = StatusCode::InternalServerError_500;
-            return write_response(strm, close_connection, req, res);
-        }
-#endif
-#endif
 
         // Request line and headers
         if (!parse_request_line(line_reader.ptr(), req) ||
@@ -9297,6 +9223,10 @@ namespace httplib {
         inline SSLSocketStream::~SSLSocketStream() = default;
 
         inline bool SSLSocketStream::is_readable() const {
+            return SSL_pending(ssl_) > 0;
+        }
+
+        inline bool SSLSocketStream::wait_readable() const {
             if (max_timeout_msec_ <= 0) {
                 return select_read(sock_, read_timeout_sec_, read_timeout_usec_) > 0;
             }
@@ -9309,7 +9239,7 @@ namespace httplib {
             return select_read(sock_, read_timeout_sec, read_timeout_usec) > 0;
         }
 
-        inline bool SSLSocketStream::is_writable() const {
+        inline bool SSLSocketStream::wait_writable() const {
             return select_write(sock_, write_timeout_sec_, write_timeout_usec_) > 0 &&
                 is_socket_alive(sock_) && !is_ssl_peer_could_be_closed(ssl_, sock_);
         }
@@ -9318,7 +9248,7 @@ namespace httplib {
             if (SSL_pending(ssl_) > 0) {
                 return SSL_read(ssl_, ptr, static_cast<int>(size));
             }
-            else if (is_readable()) {
+            else if (wait_readable()) {
                 auto ret = SSL_read(ssl_, ptr, static_cast<int>(size));
                 if (ret < 0) {
                     auto err = SSL_get_error(ssl_, ret);
@@ -9333,7 +9263,7 @@ namespace httplib {
                         if (SSL_pending(ssl_) > 0) {
                             return SSL_read(ssl_, ptr, static_cast<int>(size));
                         }
-                        else if (is_readable()) {
+                        else if (wait_readable()) {
                             std::this_thread::sleep_for(std::chrono::microseconds{ 10 });
                             ret = SSL_read(ssl_, ptr, static_cast<int>(size));
                             if (ret >= 0) { return ret; }
@@ -9352,7 +9282,7 @@ namespace httplib {
             }
 
         inline ssize_t SSLSocketStream::write(const char* ptr, size_t size) {
-            if (is_writable()) {
+            if (wait_writable()) {
                 auto handle_size = static_cast<int>(
                     std::min<size_t>(size, (std::numeric_limits<int>::max)()));
 
@@ -9367,7 +9297,7 @@ namespace httplib {
 #else
                     while (--n >= 0 && err == SSL_ERROR_WANT_WRITE) {
 #endif
-                        if (is_writable()) {
+                        if (wait_writable()) {
                             std::this_thread::sleep_for(std::chrono::microseconds{ 10 });
                             ret = SSL_write(ssl_, ptr, static_cast<int>(handle_size));
                             if (ret >= 0) { return ret; }
@@ -10601,7 +10531,7 @@ namespace httplib {
 
     } // namespace httplib
 
-#if defined(_WIN32) && defined(CPPHTTPLIB_USE_POLL)
+#ifdef _WIN32
 #undef poll
 #endif
 
