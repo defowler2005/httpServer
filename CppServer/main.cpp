@@ -6,11 +6,16 @@
 
  ////////
  // TODO:
- // CONFIG OPTIONS: MIME-TYPES, BLACK LISTED FILE OR FOLDER PATHS AND OTHER SECURITY MESURES.
+ // CONFIG OPTIONS: BLACK LISTED FILE OR FOLDER PATHS.
  ///////
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
+httplib::Server svr;
+std::string custom404Page = "<h3 style='color: red;'>404 - That file not found on this server.</h1>";
+std::string configFile = (fs::current_path() / "CppServerConfig.json").string();
+std::string ip = "0.0.0.0";
+int port = 6432;
 
 static std::string getMimeType(const std::string &extension)
 {
@@ -79,13 +84,9 @@ static void log(const std::string& message) {
 	logFile.close();
 };
 
-int main()
+static void handleConfig()
 {
-	httplib::Server svr;
-	std::string ip = "0.0.0.0";
-	int port = 6432;
-	std::string configFile = (fs::current_path() / "CppServerConfig.json").string();
-
+	// This function will automaically look for a little file called CppServerConfig.json and parse it to find cofigs for the server settings. Though where called, the function cn be commented out.
 	if (fs::exists(configFile)) {
 		try
 		{
@@ -93,34 +94,47 @@ int main()
 			std::ifstream dataFile("./CppServerConfig.json");
 			json data = json::parse(dataFile);
 
-			std::string newIp = data["ip"];
+			std::string newIp = data["hostName"];
 			std::string newPort = std::to_string(data["port"].get<int>());
+			std::string custom404Info = data["custom404Path"];
 
 			ip = newIp.empty() ? ip : newIp;
 			port = newPort.empty() ? port : std::stoi(newPort);
+
+			if (!custom404Info.empty() && fs::exists(custom404Info)) custom404Page = readFile(custom404Info);
+			else if (!custom404Info.empty()) log("The provided custom 404 path could not be resolved, Using default page.");
 		}
 		catch (const std::exception& error)
 		{
-			log("Failed to parse JSON, is your IP valid? is your PORT valid?");
-		}
+			log("Failed to parse JSON data: \n" + std::string(error.what()) + "\n");
+		};
 	}
 	else {
-		log("Config not found! Writing to new CppServerConfig.json!\n");
+		log("A configuration file was not found, The program will write one with the default settings.\n");
 		std::ofstream file("CppServerConfig.json");
 
 		json configData = json::parse(R"(
 			{   
-				"_comment0" : "This is your current default configuration for the server.",
-				"_comment1" : "You can change the IP and port to whatever you want to be, but make sure the values are valid. Otherwise the program will crash with no information or warning.",
-				"ip": "0.0.0.0",
-				"port": 6432
+				"comments": {
+                "_comment0" : "This is the current default configuration for the server.",
+				"_comment1" : "You can change the ip and port as long as they are valid, if they are malformed in any way, the program will close (crash) with no warning or errors.",
+				"_comment2" : "If you have a custom 404 page, great! set the relative file path, for example: errorPages/my404.html, if left blank or file doesn't exist, the server will use a predefined 404 page"
+            },
+				"hostName": "127.0.0.1",
+				"port": 6432,
+				"blackListedPaths": [],
+				"custom404Path": ""
 			}
 		)");
 
 		// Actually writing JSON data to the fuckin file!
 		file << configData.dump(4);
 	};
+};
 
+int main()
+{
+	handleConfig();
 	svr.Get("/", [&](const httplib::Request &req, httplib::Response &res) // Root path (./index.html).
 			{
 			std::string client_ip = req.remote_addr;
@@ -128,15 +142,14 @@ int main()
 
 			if (fs::exists(filePath)) {
 				res.set_content(readFile(filePath), "text/html");
-				log("Client " + client_ip + " requested " + req.path + " (200 OK)");
+				log("Client " + client_ip + " requested (200 OK)");
 			}
 			else {
-				log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
-				res.status = 404;
-				res.set_content("<h3 style='color: red;'>Main index.html file not found.</h1>", "text/html");
+				res.status = httplib::StatusCode::NotFound_404;
+				log("Client " + client_ip + " requested (404 Not Found)\n");
+				res.set_content(custom404Page, "text/html");
 		} 
-	}
-);
+	});
 
 	svr.Get(".*", [&](const httplib::Request &req, httplib::Response &res) { // Any file (*/*.*).
 		std::string client_ip = req.remote_addr;
@@ -146,27 +159,23 @@ int main()
 		if (fs::exists(filePath))
 		{
 			res.set_content(readFile(filePath), getMimeType(file.extension().string()));
-			log("Client " + client_ip + " requested " + req.path + " (200 OK)\n");
+			log("Client " + client_ip + " requested (200 OK)\n");
 		}
 		else
 		{
 			res.status = httplib::StatusCode::NotFound_404;
-			std::string File404 = fs::current_path().string() + "/404.html";
-			log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
-
-			if (fs::exists(File404)) res.set_content(readFile(File404), "text/html");
-			else res.set_content("<h3 style='color: red;'>The requested file " + req.path + " was not found on the server.</h3>", "text/html");
+			log("Client " + client_ip + " requested (404 Not Found)\n");
+			res.set_content(custom404Page, "text/html");
 		}
-	}
-);
+	});
 
 	try
 	{
-		log("Server listening on " + ip + ":" + std::to_string(port) + " All network interfaces.\n");
+		log("Server listening on " + ip + ":" + std::to_string(port) + (ip == "0.0.0.0" ? " All network interfaces.\n" : "\n"));
 		svr.listen(ip, port);
 	}
 	catch (const std::exception &error)
 	{
-		std::cout << "An error occured while running the server program: " << error.what();
+		log("An error occured while running the server program: " + std::string(error.what()));
 	}
-};
+}; 
