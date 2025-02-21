@@ -133,7 +133,7 @@ static void handleConfig()
 	};
 };
 
-int main() an
+int main()
 {
 	handleConfig();
 	svr.Get("/", [&](const httplib::Request &req, httplib::Response &res) // Root path (./index.html).
