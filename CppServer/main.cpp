@@ -4,18 +4,13 @@
 #include <filesystem>;
 #include <iostream>;
 
- ////////
- // TODO:
- // CONFIG OPTIONS: BLACK LISTED FILE OR FOLDER PATHS.
- // IMPLIMENT: READFILE 500 LOGIC.
- ///////
-
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 httplib::Server svr;
 std::string custom404Page = "<h3 style='color: red;'>404 - Not found: That file not found on this server.</h1>";
 std::string configFile = (fs::current_path() / "CppServerConfig.json").string();
 std::string ip = "0.0.0.0";
+std::vector<std::string> blackListedPaths;
 int port = 6432;
 
 static std::string getMimeType(const std::string &extension)
@@ -59,7 +54,7 @@ static std::string readFile(const std::string &filePath)
 
 	if (!file)
 	{
-            return "<h3 style='color: red;'>500 - Internal server error: Failed to read requested file </h3>";
+		return "";
 	};
 
 	std::ostringstream contents;
@@ -95,10 +90,10 @@ static void handleConfig()
 			log("Config found!\n");
 			std::ifstream dataFile("./CppServerConfig.json");
 			json data = json::parse(dataFile);
-
 			std::string newIp = data["hostName"];
 			std::string newPort = std::to_string(data["port"].get<int>());
 			std::string custom404Info = data["custom404Path"];
+		    blackListedPaths = data["blackListedPaths"];
 
 			ip = newIp.empty() ? ip : newIp;
 			port = newPort.empty() ? port : std::stoi(newPort);
@@ -118,7 +113,7 @@ static void handleConfig()
 		json configData = json::parse(R"(
 			{   
 				"comments": {
-                                "_comment0" : "This is the current default configuration for the server.",
+                "_comment0" : "This is the current default configuration for the server.",
 				"_comment1" : "You can change the ip and port as long as they are valid, if they are malformed in any way, the program will close (crash) with no warning or errors.",
 				"_comment2" : "If you have a custom 404 page, great! set the relative file path, for example: errorPages/my404.html, if left blank or file doesn't exist, the server will use a predefined 404 page"
             },
@@ -144,11 +139,11 @@ int main()
 
 			if (fs::exists(filePath)) {
 				res.set_content(readFile(filePath), "text/html");
-				log("Client " + client_ip + " requested (200 OK)");
+				log("Client " + client_ip + " requested " + req.path + " (200 OK)\n");
 			}
 			else {
 				res.status = httplib::StatusCode::NotFound_404;
-				log("Client " + client_ip + " requested (404 Not Found)\n");
+				log("Client " + client_ip + " requested " + req.path + " (404 Not Found)\n");
 				res.set_content(custom404Page, "text/html");
 		} 
 	});
@@ -157,18 +152,28 @@ int main()
 		std::string client_ip = req.remote_addr;
 		std::string filePath = fs::current_path().string() + req.path;
 		std::filesystem::path file(filePath);
+		std::string absoluteFilePath = fs::absolute(fs::current_path() / req.path).string();
+
+		for (const std::string& blackListedPath : blackListedPaths) {
+			if (absoluteFilePath.find(fs::absolute(blackListedPath).string()) == 0) {
+				res.status = httplib::StatusCode::Forbidden_403;
+				res.set_content("<h3 style='color: red;'>403 - Forbidden: The requested file is not for the public.</h3>", "text/html");
+				log("Client " + client_ip + " requested " + req.path + " (403 Forbidden)\n");
+				return;
+			}
+		};
 
 		if (fs::exists(filePath))
 		{
 			res.set_content(readFile(filePath), getMimeType(file.extension().string()));
-			log("Client " + client_ip + " requested (200 OK)\n");
+			log("Client " + client_ip + " requested " + req.path + " (200 OK)\n");
 		}
 		else
 		{
 			res.status = httplib::StatusCode::NotFound_404;
 			log("Client " + client_ip + " requested (404 Not Found)\n");
 			res.set_content(custom404Page, "text/html");
-		}
+		};
 	});
 
 	try
